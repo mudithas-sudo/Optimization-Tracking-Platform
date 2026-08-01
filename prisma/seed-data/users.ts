@@ -33,7 +33,7 @@ export const users = [
     id: "bse",
     clerkId: null,
     employeeId: "BSE",
-    email: "bse@hsenidmobile.com",
+    email: "muditha.s@hsenidmobile.com",
     name: "Business Solutions Engineer",
     jobTitle: "Business Solutions Engineer",
     userGroup: UserGroup.BSE,

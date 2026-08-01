@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, ClipboardList, FileText, Presentation,
+  LayoutDashboard, ClipboardList, PlusCircle, FileText, Presentation,
   Cpu, Grid3x3, BookOpen, GraduationCap, FileBarChart, Target, ShieldCheck, Settings,
   type LucideIcon,
 } from "lucide-react";
@@ -31,12 +31,13 @@ interface NavItem {
 
 // Single, role-agnostic nav list - filtered per user by getVisibleNavItems()
 // against their granted Permission keys (see lib/permissions.ts). Routes for
-// permissions with no page yet (add-optimization, validation-queue) are
-// intentionally omitted here even though the permission itself is seeded and
-// configurable, so no dead links appear until those write-flow pages exist.
+// permissions with no page yet (validation-queue) are intentionally omitted
+// here even though the permission itself is seeded and configurable, so no
+// dead links appear until that write-flow page exists.
 export const NAV_ITEMS: NavItem[] = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard, keys: ["dashboard.employee", "dashboard.executive"] },
   { path: "/my-optimizations", label: "My Optimizations", icon: ClipboardList, keys: ["my-optimizations.view"] },
+  { path: "/add-optimization", label: "Add Optimization", icon: PlusCircle, keys: ["add-optimization.use"] },
   { path: "/ba-analytics", label: "Business Analysis Analytics", icon: FileText, keys: ["ba-analytics.view"] },
   { path: "/presales-analytics", label: "Presales Analytics", icon: Presentation, keys: ["presales-analytics.view"] },
   { path: "/ai-tool-analytics", label: "AI Tool Analytics", icon: Cpu, keys: ["ai-tool-analytics.view"] },
@@ -54,6 +55,5 @@ export function getVisibleNavItems(granted: PermissionKey[]): NavItem[] {
   return NAV_ITEMS.filter((item) => item.keys.some((k) => grantedSet.has(k)));
 }
 
-// Unimplemented write-flow permissions still worth showing in the admin
-// Permissions matrix so they can be configured ahead of the pages landing:
-// "add-optimization.use", "validation-queue.view".
+// "validation-queue.view" has no page yet but is still worth showing in the
+// admin Permissions matrix so it can be configured ahead of that page landing.
