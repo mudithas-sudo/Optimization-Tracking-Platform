@@ -1,0 +1,451 @@
+// AI Optimization Analytics Platform - Prisma schema
+// Ported 1:1 from the Vite prototype's src/data/mockData.js entities.
+// See ../../ai-optimization-platform/src/data/mockData.js for the original
+// hand-authored sample data this schema is designed to hold.
+
+// Prisma 7: no `url` here. Migrations/introspection get their connection
+// from prisma.config.ts; the app's PrismaClient gets its connection from an
+// explicit driver adapter (lib/db.ts) instead of reading DATABASE_URL itself.
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+// Platform access tier - deliberately separate from User.jobTitle (their real
+// domain title, e.g. "Senior Business Analyst"). This is the permission-system
+// dimension: which components of the platform a user can see, configured via
+// the Permission model below rather than hardcoded per group.
+enum UserGroup {
+  TRAINEE_BSE
+  ASSOCIATE_BSE
+  BSE
+  LEAD_BSE
+  MANAGEMENT
+  ADMIN
+}
+
+enum ValidationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  VALIDATED
+  REJECTED
+  NEEDS_CLARIFICATION
+}
+
+enum ReusabilityLevel {
+  NONE
+  TEAM
+  DEPARTMENT
+  ORG_WIDE
+}
+
+enum ConfidentialityClassification {
+  PUBLIC
+  INTERNAL
+  CONFIDENTIAL
+  RESTRICTED
+}
+
+// Used both for a baseline's stated reliability and (computed, never stored
+// on OptimizationSubmission itself - see lib/metrics.ts) a submission's
+// confidence level.
+enum ConfidenceLevel {
+  HIGH
+  MEDIUM
+  LOW
+  UNVERIFIED
+}
+
+enum CollaborationType {
+  INDIVIDUAL
+  COLLABORATIVE
+}
+
+enum FinalOutcome {
+  ADOPTED
+  ADOPTED_WITH_EDITS
+  REJECTED
+  DISCARDED
+}
+
+enum AssetType {
+  PROMPT
+  TEMPLATE
+  WORKFLOW
+}
+
+// Shared by ReusableAsset.status and KnowledgeItem.approvalStatus.
+enum ApprovalStatus {
+  APPROVED
+  UNDER_REVIEW
+  DEPRECATED
+}
+
+enum Severity {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+// ---------------------------------------------------------------------------
+// Org structure
+// ---------------------------------------------------------------------------
+
+model Department {
+  id    String @id
+  name  String
+
+  teams Team[]
+  users User[]
+}
+
+model Team {
+  id           String     @id
+  name         String
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+
+  users User[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  clerkId      String?  @unique // null until first sign-in links this row (see Clerk webhook)
+  employeeId   String   @unique // business key e.g. 'EMP-101', kept from the prototype
+  email        String   @unique
+  name         String
+  jobTitle     String
+  teamId       String?
+  team         Team?    @relation(fields: [teamId], references: [id])
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  userGroup    UserGroup
+  hourlyCost   Decimal  @db.Decimal(10, 2)
+  country      String
+  active       Boolean  @default(true)
+  joinedDate   DateTime
+
+  submittedOptimizations  OptimizationSubmission[] @relation("SubmittedBy")
+  validatedOptimizations  OptimizationSubmission[] @relation("ValidatedBy")
+  ownedBaselines          BaselineRecord[]
+  createdAssets           ReusableAsset[]
+  ownedKnowledgeItems     KnowledgeItem[]
+  auditLogs               AuditLog[]
+  facilitatedCoeSessions  COESession[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Customers / Projects
+// ---------------------------------------------------------------------------
+
+model Customer {
+  id      String @id
+  name    String
+  type    String // 'Customer' | 'Prospect'
+  country String
+  sector  String
+
+  projects Project[]
+}
+
+model Project {
+  id             String  @id
+  name           String
+  customerId     String
+  customer       Customer @relation(fields: [customerId], references: [id])
+  stage          String  // 'Delivery' | 'Opportunity'
+  salesOutcome   String? // 'Won' | 'Lost' | 'In Progress', null for delivery-stage projects
+
+  submissions OptimizationSubmission[]
+}
+
+// ---------------------------------------------------------------------------
+// AI tools / models / activity taxonomy
+// ---------------------------------------------------------------------------
+
+model AITool {
+  id                 String  @id
+  name               String
+  vendor             String
+  monthlyCostPerSeat Decimal @db.Decimal(10, 2)
+  seats              Int
+  activeUsers        Int     // hand-maintained for now - see plan notes on deriving this later
+  classification     String  // data-security classification, e.g. 'Approved - General Use'
+  category           String  // 'General LLM' | 'Code Assistant' | 'Research' | ...
+  userSatisfaction   Decimal @db.Decimal(3, 2)
+
+  models        AIModel[]
+  submissions   OptimizationSubmission[]
+  assets        ReusableAsset[]
+  knowledgeItems KnowledgeItem[]
+}
+
+model AIModel {
+  id     String @id @default(cuid())
+  name   String
+  toolId String
+  tool   AITool @relation(fields: [toolId], references: [id])
+
+  @@unique([toolId, name])
+}
+
+model ActivityCategory {
+  id    String @id
+  group String // 'Business Analysis' | 'Presales'
+  name  String
+
+  baseline       BaselineRecord?
+  submissions    OptimizationSubmission[]
+  assets         ReusableAsset[]
+  knowledgeItems KnowledgeItem[]
+  coeSessions    COESession[]
+}
+
+model BaselineRecord {
+  id                String            @id
+  categoryId        String            @unique
+  category          ActivityCategory  @relation(fields: [categoryId], references: [id])
+  source            String
+  period            String
+  recordsConsidered Int
+  avgEffort         Decimal           @db.Decimal(6, 2)
+  minEffort         Decimal           @db.Decimal(6, 2)
+  maxEffort         Decimal           @db.Decimal(6, 2)
+  ownerId           String
+  owner             User              @relation(fields: [ownerId], references: [id])
+  approvalStatus    String
+  confidenceLevel   ConfidenceLevel
+}
+
+// ---------------------------------------------------------------------------
+// The core transactional record
+// ---------------------------------------------------------------------------
+
+model OptimizationSubmission {
+  id                     String   @id // business key e.g. 'OPT-2001'
+
+  employeeId             String
+  employee               User     @relation("SubmittedBy", fields: [employeeId], references: [id])
+  submissionDate         DateTime
+  activityDate           DateTime
+
+  projectId              String?
+  project                Project? @relation(fields: [projectId], references: [id])
+
+  activityCategoryId     String
+  activityCategory       ActivityCategory @relation(fields: [activityCategoryId], references: [id])
+  activitySubcategory    String?
+  taskDescription        String   @db.Text
+
+  aiToolId               String
+  aiTool                 AITool   @relation(fields: [aiToolId], references: [id])
+  aiModel                String?
+  promptOrWorkflow       String?  @db.Text
+
+  reusablePromptUsed     Boolean  @default(false)
+  reusablePromptId       String?
+  reusableAsset          ReusableAsset? @relation(fields: [reusablePromptId], references: [id])
+
+  collaborationType      CollaborationType @default(INDIVIDUAL)
+  collaboratorsCount     Int      @default(1)
+
+  // Optional link to the COE (Community of Expertise) session that enabled
+  // this activity, e.g. a template-walkthrough session that let someone draft
+  // a proposal in hours instead of days. Distinct from reusableAsset above -
+  // a session is a one-time knowledge-transfer event, an asset is the durable
+  // prompt/template artifact it may have produced.
+  coeSessionId           String?
+  coeSession             COESession? @relation(fields: [coeSessionId], references: [id])
+
+  aiOutputSummary        String?  @db.Text
+  finalOutputSummary     String?  @db.Text
+
+  // Effort inputs - every derived metric (net time saved, confidence score,
+  // etc.) is computed on read from these fields by lib/metrics.ts, never
+  // stored. There is deliberately no per-activity AI tool cost field: an
+  // employee cannot practically know the per-call cost of an AI tool, so
+  // AI cost/ROI is tracked at the AITool subscription level (monthlyCostPerSeat)
+  // instead - see lib/metrics.ts and the AI Tool Analytics page.
+  estEffortWithoutAI     Decimal  @db.Decimal(8, 2)
+  actualEffortWithAI     Decimal  @db.Decimal(8, 2)
+  reviewCorrectionTime   Decimal  @default(0) @db.Decimal(8, 2)
+  iterations             Int      @default(1)
+
+  qualityBefore          Int
+  qualityAfter           Int
+  defectsBefore          Int      @default(0)
+  defectsAfter           Int      @default(0)
+  reworkTimeAvoided      Decimal  @default(0) @db.Decimal(8, 2)
+
+  finalOutcome           FinalOutcome
+
+  evidenceType           String?
+  evidenceFileName       String?
+  supportingLink         String?
+
+  validationStatus       ValidationStatus @default(SUBMITTED)
+  validatedById          String?
+  validatedBy            User?    @relation("ValidatedBy", fields: [validatedById], references: [id])
+  validatedDate          DateTime?
+  managerComments        String?  @db.Text
+
+  reusabilityLevel               ReusabilityLevel @default(NONE)
+  confidentialityClassification  ConfidentialityClassification @default(INTERNAL)
+
+  flags String[] @default([]) // ad hoc system flags, e.g. 'possible-duplicate-of-OPT-2002'
+
+  auditLogs AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([employeeId])
+  @@index([activityCategoryId])
+  @@index([aiToolId])
+  @@index([validationStatus])
+  @@index([activityDate])
+}
+
+// ---------------------------------------------------------------------------
+// COE (Community of Expertise) sessions
+// ---------------------------------------------------------------------------
+
+model COESession {
+  id                 String   @id @default(cuid())
+  title              String
+  description        String   @db.Text
+  date               DateTime
+  facilitatorId      String
+  facilitator        User     @relation(fields: [facilitatorId], references: [id])
+  activityCategoryId String?
+  activityCategory   ActivityCategory? @relation(fields: [activityCategoryId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  submissionsEnabled OptimizationSubmission[]
+}
+
+// ---------------------------------------------------------------------------
+// Reusable assets / knowledge repository
+// ---------------------------------------------------------------------------
+
+model ReusableAsset {
+  id                   String    @id
+  title                String
+  type                 AssetType
+  categoryId           String
+  category             ActivityCategory @relation(fields: [categoryId], references: [id])
+  toolId               String
+  tool                 AITool    @relation(fields: [toolId], references: [id])
+  createdById          String
+  createdBy            User      @relation(fields: [createdById], references: [id])
+  createdDate          DateTime
+
+  // Lifetime aggregate counters - hand-maintained for now (see plan notes on
+  // deriving these from submission history once volume justifies it).
+  timesReused          Int       @default(0)
+  cumulativeHoursSaved Decimal   @default(0) @db.Decimal(10, 2)
+  avgRating            Decimal?  @db.Decimal(3, 2)
+  ratingsCount         Int       @default(0)
+
+  status               ApprovalStatus
+  lastReviewedDate     DateTime?
+
+  submissionsUsing     OptimizationSubmission[]
+  knowledgeItems       KnowledgeItem[]
+}
+
+model KnowledgeItem {
+  id                    String   @id
+  title                 String
+  problemAddressed      String   @db.Text
+  activityCategoryId    String
+  activityCategory      ActivityCategory @relation(fields: [activityCategoryId], references: [id])
+  recommendedToolId     String
+  recommendedTool       AITool   @relation(fields: [recommendedToolId], references: [id])
+  assetId               String?
+  asset                 ReusableAsset? @relation(fields: [assetId], references: [id])
+
+  approvedPrompt         String?  @db.Text
+  inputRequirements      String[]
+  workflowSteps          String[]
+  humanReviewChecklist   String[]
+  risksLimitations       String[]
+
+  avgTimeSaved           Decimal  @db.Decimal(8, 2)
+  avgQualityImprovement  Decimal  @db.Decimal(6, 2)
+  successfulUses         Int      @default(0)
+
+  ownerId                String
+  owner                  User     @relation(fields: [ownerId], references: [id])
+  lastReviewedDate       DateTime
+  version                String
+  approvalStatus         ApprovalStatus
+
+  helpfulVotes    Int @default(0)
+  notHelpfulVotes Int @default(0)
+}
+
+// ---------------------------------------------------------------------------
+// Targets / notifications / audit log
+// ---------------------------------------------------------------------------
+
+model Target {
+  id          String  @id
+  label       String
+  metricKey   String  @unique
+  targetValue Decimal @db.Decimal(10, 2)
+  unit        String  // 'hours' | 'usd' | 'percent'
+  scope       String  // 'Organization'
+  period      String  // 'Monthly' | 'Ongoing'
+  direction   String? // 'max' when the target is a ceiling rather than a floor
+}
+
+model Notification {
+  id            String     @id @default(cuid())
+  type          String
+  message       String     @db.Text
+  severity      Severity
+  relatedId     String?
+  date          DateTime
+  audienceRoles UserGroup[]
+  readBy        String[]   @default([])
+}
+
+// One row per gate-able platform component (a nav item / dashboard section).
+// allowedGroups is the admin-editable permission matrix: which UserGroups can
+// see this component. Seeded with sensible defaults in prisma/seed-data -
+// change them via the Administration > Permissions tab, not by editing code.
+model Permission {
+  key           String      @id // e.g. 'dashboard.employee', 'validation-queue.view'
+  label         String
+  description   String      @db.Text
+  allowedGroups UserGroup[]
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  entityType String   // 'Submission' | 'Asset' | ...
+  entityId   String
+  action     String   // 'Created' | 'Validated' | 'Rejected' | 'Flagged' | 'Status Changed'
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  timestamp  DateTime @default(now())
+  details    String   @db.Text
+
+  submissionId String?
+  submission   OptimizationSubmission? @relation(fields: [submissionId], references: [id])
+}
