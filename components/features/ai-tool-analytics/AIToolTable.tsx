@@ -3,17 +3,14 @@
 import { useState } from "react";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Panel } from "@/components/ui/Panel";
-import { bdCurrency, numFmt } from "@/lib/format";
+import { numFmt } from "@/lib/format";
 
 export interface ToolRow {
-  tool: { id: string; name: string; vendor: string; classification: string; monthlyCostPerSeat: number; seats: number; activeUsers: number };
+  tool: { id: string; name: string; vendor: string; classification: string; seats: number; activeUsers: number };
   users: number;
   activities: number;
   totalHoursSaved: number;
   avgHoursSaved: number;
-  annualCost: number;
-  netBenefit: number;
-  roi: number | null;
   qualityScore: number;
   errorRate: number;
   reworkRate: number;
@@ -30,9 +27,6 @@ export function AIToolTable({ rows }: { rows: ToolRow[] }) {
     { key: "users", label: "Users" },
     { key: "activities", label: "Activities" },
     { key: "totalHoursSaved", label: "Total Hrs Saved", render: (r) => `${numFmt(r.totalHoursSaved)}h` },
-    { key: "annualCost", label: "Annual Subscription Cost", render: (r) => bdCurrency(r.annualCost) },
-    { key: "netBenefit", label: "Net Benefit", render: (r) => bdCurrency(r.netBenefit, { short: true }) },
-    { key: "roi", label: "ROI", render: (r) => (r.roi === null ? "N/A" : `${numFmt(r.roi, 0)}%`) },
     { key: "errorRate", label: "Error Rate", render: (r) => `${numFmt(r.errorRate, 0)}%` },
     { key: "satisfaction", label: "Satisfaction", render: (r) => `${r.satisfaction}/5` },
     { key: "subscriptionUtilization", label: "Seat Utilization", render: (r) => `${numFmt(r.subscriptionUtilization, 0)}%` },
@@ -60,7 +54,6 @@ export function AIToolTable({ rows }: { rows: ToolRow[] }) {
             <DetailStat label="Avg hours saved / activity" value={`${numFmt(selected.avgHoursSaved)}h`} />
             <DetailStat label="Quality score after AI" value={`${numFmt(selected.qualityScore, 1)}/5`} />
             <DetailStat label="Rework rate" value={`${numFmt(selected.reworkRate, 0)}%`} />
-            <DetailStat label="Monthly cost / seat" value={bdCurrency(selected.tool.monthlyCostPerSeat)} />
             <DetailStat label="Seats provisioned" value={selected.tool.seats} />
             <DetailStat label="Active users (30d)" value={selected.tool.activeUsers} />
             <DetailStat label="Data security classification" value={selected.tool.classification} />

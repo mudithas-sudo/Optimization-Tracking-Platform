@@ -9,11 +9,9 @@ import { getCurrentDbUser } from "./auth";
 // default matrix and the human-readable label/description shown there.
 export const PERMISSION_KEYS = [
   "dashboard.employee",
-  "dashboard.manager",
   "dashboard.executive",
   "my-optimizations.view",
   "add-optimization.use",
-  "team-analytics.view",
   "ba-analytics.view",
   "presales-analytics.view",
   "ai-tool-analytics.view",

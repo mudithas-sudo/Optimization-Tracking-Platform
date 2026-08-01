@@ -1,7 +1,7 @@
 import { getCurrentDbUser } from "@/lib/auth";
 import { getEnrichedSubmissions } from "@/lib/submissions";
-import { totals, monthlyTrend, byTool, sum, FORMULAS } from "@/lib/metrics";
-import { bdCurrency, numFmt } from "@/lib/format";
+import { totals, monthlyTrend, byTool, FORMULAS } from "@/lib/metrics";
+import { numFmt } from "@/lib/format";
 import { SectionHeading } from "@/components/ui/Misc";
 import { KpiCard } from "@/components/ui/KpiCard";
 import { Panel, EmptyState } from "@/components/ui/Panel";
@@ -13,14 +13,9 @@ export async function EmployeeDashboardView() {
   const user = await getCurrentDbUser();
   if (!user) return null; // layout already redirects; satisfies TypeScript
 
-  const [mine, teammateSubs] = await Promise.all([
-    getEnrichedSubmissions({ employeeId: user.id }),
-    user.teamId ? getEnrichedSubmissions({ employee: { teamId: user.teamId } }) : Promise.resolve([]),
-  ]);
+  const mine = await getEnrichedSubmissions({ employeeId: user.id });
 
   const t = totals(mine);
-  const teamTotals = totals(teammateSubs);
-  const teamAvgPerHead = teamTotals.count / Math.max(1, new Set(teammateSubs.map((s) => s.employeeId)).size);
   const trend = monthlyTrend(mine);
   const toolsUsed = byTool(mine)
     .filter((r) => r.tool)
@@ -28,7 +23,7 @@ export async function EmployeeDashboardView() {
   const rejectedOrUnverified = mine.filter((s) => s.validationStatus === "REJECTED" || s.confidenceLevel === "UNVERIFIED");
   const successful = [...mine]
     .filter((s) => s.validationStatus === "VALIDATED")
-    .sort((a, b) => b.netFinancialBenefit - a.netFinancialBenefit)
+    .sort((a, b) => b.netTimeSaved - a.netTimeSaved)
     .slice(0, 5);
   const reusableContributed = mine.filter((s) => s.reusabilityLevel && s.reusabilityLevel !== "NONE").length;
 
@@ -39,12 +34,10 @@ export async function EmployeeDashboardView() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         <KpiCard label="My AI-assisted activities" value={numFmt(t.count, 0)} sub={`${t.validatedCount} validated`} href="/my-optimizations" />
         <KpiCard label="My hours saved" value={`${numFmt(t.totalHoursSaved)}h`} formula={FORMULAS.netTimeSaved} />
-        <KpiCard label="My net financial benefit" value={bdCurrency(t.totalNetBenefit, { short: true })} formula={FORMULAS.netFinancialBenefit} />
         <KpiCard label="Avg quality improvement" value={`${numFmt(t.avgQualityImprovementPercent, 0)}%`} />
         <KpiCard label="Avg confidence score" value={numFmt(t.avgConfidenceScore, 0)} sub="out of 100" />
         <KpiCard label="Reusable assets contributed to" value={numFmt(reusableContributed, 0)} />
         <KpiCard label="Rejected / unverified entries" value={numFmt(rejectedOrUnverified.length, 0)} tone={rejectedOrUnverified.length > 0 ? "watch" : "good"} />
-        <KpiCard label="vs. team average activity count" value={`${numFmt(t.count)} / ${numFmt(teamAvgPerHead)}`} sub="you / team average" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -83,7 +76,7 @@ export async function EmployeeDashboardView() {
                     <span className="text-ink-700 truncate mr-2">
                       {s.id} · {s.taskDescription.slice(0, 60)}...
                     </span>
-                    <span className="font-semibold text-success-600 shrink-0">{bdCurrency(s.netFinancialBenefit, { short: true })}</span>
+                    <span className="font-semibold text-success-600 shrink-0">{numFmt(s.netTimeSaved)}h</span>
                   </Link>
                 </li>
               ))}

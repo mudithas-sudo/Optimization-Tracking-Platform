@@ -15,7 +15,7 @@ export const knowledgeItems = [
     ],
     humanReviewChecklist: ["All agenda items addressed", "Action items have a named owner", "No invented commitments", "Sensitive commercial terms redacted if distributing externally"],
     risksLimitations: ["Poor audio quality reduces transcript accuracy", "Cross-talk in large meetings can misattribute action items"],
-    avgTimeSaved: 0.9, avgQualityImprovement: 25, successfulUses: 46, ownerId: "mgr-201", lastReviewedDate: new Date("2026-06-01"), version: "2.1", approvalStatus: ApprovalStatus.APPROVED,
+    avgTimeSaved: 0.9, avgQualityImprovement: 25, successfulUses: 46, ownerId: "lead-bse", lastReviewedDate: new Date("2026-06-01"), version: "2.1", approvalStatus: ApprovalStatus.APPROVED,
     helpfulVotes: 27, notHelpfulVotes: 2,
   },
   {
@@ -32,7 +32,7 @@ export const knowledgeItems = [
     ],
     humanReviewChecklist: ["Business outcomes lead, not feature lists", "Pricing figures match the commercial section exactly", "No competitor names mentioned unless approved"],
     risksLimitations: ["Can overstate certainty on effort/timeline if source draft is still in flux"],
-    avgTimeSaved: 1.3, avgQualityImprovement: 30, successfulUses: 14, ownerId: "mgr-203", lastReviewedDate: new Date("2026-05-01"), version: "1.4", approvalStatus: ApprovalStatus.APPROVED,
+    avgTimeSaved: 1.3, avgQualityImprovement: 30, successfulUses: 14, ownerId: "lead-bse", lastReviewedDate: new Date("2026-05-01"), version: "1.4", approvalStatus: ApprovalStatus.APPROVED,
     helpfulVotes: 11, notHelpfulVotes: 1,
   },
   {
@@ -49,7 +49,7 @@ export const knowledgeItems = [
     ],
     humanReviewChecklist: ["Every requirement ID has at least one scenario", "Negative/edge cases included, not just happy path", "No scenario duplicates an existing regression test"],
     risksLimitations: ["Quality depends entirely on how complete the source requirement is"],
-    avgTimeSaved: 1.4, avgQualityImprovement: 22, successfulUses: 19, ownerId: "mgr-201", lastReviewedDate: new Date("2026-01-23"), version: "1.2", approvalStatus: ApprovalStatus.APPROVED,
+    avgTimeSaved: 1.4, avgQualityImprovement: 22, successfulUses: 19, ownerId: "lead-bse", lastReviewedDate: new Date("2026-01-23"), version: "1.2", approvalStatus: ApprovalStatus.APPROVED,
     helpfulVotes: 16, notHelpfulVotes: 1,
   },
   {
@@ -66,7 +66,7 @@ export const knowledgeItems = [
     ],
     humanReviewChecklist: ["Every [NEEDS SME REVIEW] flag resolved", "Technical claims verified against actual product capability", "Compliance/commercial terms reviewed by the deal owner"],
     risksLimitations: ["Multi-contributor drafts can drift in tone without a final consistency pass", "Not a substitute for domain sign-off on technical commitments"],
-    avgTimeSaved: 8, avgQualityImprovement: 28, successfulUses: 6, ownerId: "mgr-203", lastReviewedDate: new Date("2026-03-07"), version: "1.0", approvalStatus: ApprovalStatus.APPROVED,
+    avgTimeSaved: 8, avgQualityImprovement: 28, successfulUses: 6, ownerId: "lead-bse", lastReviewedDate: new Date("2026-03-07"), version: "1.0", approvalStatus: ApprovalStatus.APPROVED,
     helpfulVotes: 5, notHelpfulVotes: 0,
   },
   {
@@ -83,7 +83,7 @@ export const knowledgeItems = [
     ],
     humanReviewChecklist: ["Every figure has a citation", "Citations are dated and independently opened, not just trusted", "No fabricated competitor features"],
     risksLimitations: ["Public pricing data ages quickly - always verify anything used in a live commercial negotiation"],
-    avgTimeSaved: 2.2, avgQualityImprovement: 15, successfulUses: 11, ownerId: "mgr-204", lastReviewedDate: new Date("2026-04-01"), version: "1.3", approvalStatus: ApprovalStatus.APPROVED,
+    avgTimeSaved: 2.2, avgQualityImprovement: 15, successfulUses: 11, ownerId: "lead-bse", lastReviewedDate: new Date("2026-04-01"), version: "1.3", approvalStatus: ApprovalStatus.APPROVED,
     helpfulVotes: 8, notHelpfulVotes: 2,
   },
   {
@@ -100,7 +100,7 @@ export const knowledgeItems = [
     ],
     humanReviewChecklist: ["Every monetary figure traced to a specific source document", "No figure relies on the model's general training knowledge", "Rollback/assumptions section reviewed by a second BA"],
     risksLimitations: ["This template is currently flagged Under Review after repeated factual-accuracy issues - use with extra scrutiny until re-approved."],
-    avgTimeSaved: -0.1, avgQualityImprovement: -5, successfulUses: 9, ownerId: "mgr-202", lastReviewedDate: new Date("2026-07-12"), version: "1.1", approvalStatus: ApprovalStatus.UNDER_REVIEW,
+    avgTimeSaved: -0.1, avgQualityImprovement: -5, successfulUses: 9, ownerId: "lead-bse", lastReviewedDate: new Date("2026-07-12"), version: "1.1", approvalStatus: ApprovalStatus.UNDER_REVIEW,
     helpfulVotes: 4, notHelpfulVotes: 5,
   },
 ];

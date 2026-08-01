@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Optimization Analytics Platform",
-  description: "Track, measure, and validate AI-driven productivity gains across Business Analysis and Presales.",
+  title: "AI Impact & COE Tracker",
+  description: "Track the measured hours-saved impact of AI adoption and COE knowledge-transfer sessions across Business Analysis and Presales.",
 };
 
 export default function RootLayout({

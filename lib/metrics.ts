@@ -31,9 +31,6 @@ export type SubmissionWithRelations = Prisma.OptimizationSubmissionGetPayload<{ 
 export const FORMULAS = {
   netTimeSaved: "Net Time Saved = Estimated Effort Without AI - Actual Effort With AI - Additional Review or Correction Time",
   timeSavingPercent: "Time-Saving % = Net Time Saved / Estimated Effort Without AI x 100",
-  grossCostSaving: "Gross Cost Saving = Net Time Saved x Employee Hourly Cost",
-  netFinancialBenefit: "Net Financial Benefit = Gross Cost Saving - Additional Review Cost",
-  roi: "ROI = Net Financial Benefit / AI Tool Subscription Cost x 100 - computed per tool or org-wide from admin-configured subscription cost (seats x monthly cost/seat), not from per-activity employee estimates",
   confidence: "Confidence Score = Evidence (25) + Baseline availability (20) + Manager validation (25) + Consistency vs. baseline (15) + Field completeness (15)",
 };
 
@@ -49,22 +46,6 @@ export function timeSavingPercent(sub: SubmissionWithRelations) {
   const est = toNumber(sub.estEffortWithoutAI);
   if (!est) return 0;
   return (netTimeSaved(sub) / est) * 100;
-}
-
-export function hourlyCostFor(sub: SubmissionWithRelations) {
-  return toNumber(sub.employee.hourlyCost);
-}
-
-export function grossCostSaving(sub: SubmissionWithRelations) {
-  return netTimeSaved(sub) * hourlyCostFor(sub);
-}
-
-export function additionalReviewCost(sub: SubmissionWithRelations) {
-  return toNumber(sub.reviewCorrectionTime) * hourlyCostFor(sub);
-}
-
-export function netFinancialBenefit(sub: SubmissionWithRelations) {
-  return grossCostSaving(sub) - additionalReviewCost(sub);
 }
 
 export function qualityImprovementPercent(sub: SubmissionWithRelations) {
@@ -146,12 +127,11 @@ export function computeConfidence(sub: SubmissionWithRelations): ConfidenceResul
 // actualEffortWithAI, reviewCorrectionTime, reworkTimeAvoided) are overridden to plain
 // numbers here so every arithmetic call site (sum/avg/etc.) can treat an EnrichedSubmission
 // uniformly as numbers, matching how the original prototype worked. This also
-// covers Decimal fields nested in relations (employee.hourlyCost, aiTool.*,
+// covers Decimal fields nested in relations (aiTool.userSatisfaction,
 // baseline.*, reusableAsset.*) - those aren't plain objects either, and any
 // EnrichedSubmission can end up passed into a Client Component (e.g. Reports,
 // My Optimizations tables), which requires plain-serializable props.
-type PlainUser = Omit<SubmissionWithRelations["employee"], "hourlyCost"> & { hourlyCost: number };
-type PlainAITool = Omit<SubmissionWithRelations["aiTool"], "monthlyCostPerSeat" | "userSatisfaction"> & { monthlyCostPerSeat: number; userSatisfaction: number };
+type PlainAITool = Omit<SubmissionWithRelations["aiTool"], "userSatisfaction"> & { userSatisfaction: number };
 type PlainBaseline = Omit<NonNullable<SubmissionWithRelations["activityCategory"]["baseline"]>, "avgEffort" | "minEffort" | "maxEffort"> & {
   avgEffort: number;
   minEffort: number;
@@ -163,33 +143,23 @@ type PlainReusableAsset = Omit<NonNullable<SubmissionWithRelations["reusableAsse
 };
 
 export interface EnrichedSubmission
-  extends Omit<SubmissionWithRelations, "estEffortWithoutAI" | "actualEffortWithAI" | "reviewCorrectionTime" | "reworkTimeAvoided" | "employee" | "validatedBy" | "aiTool" | "activityCategory" | "reusableAsset"> {
+  extends Omit<SubmissionWithRelations, "estEffortWithoutAI" | "actualEffortWithAI" | "reviewCorrectionTime" | "reworkTimeAvoided" | "aiTool" | "activityCategory" | "reusableAsset"> {
   estEffortWithoutAI: number;
   actualEffortWithAI: number;
   reviewCorrectionTime: number;
   reworkTimeAvoided: number;
-  employee: PlainUser;
-  validatedBy: PlainUser | null;
   aiTool: PlainAITool;
   activityCategory: Omit<SubmissionWithRelations["activityCategory"], "baseline"> & { baseline: PlainBaseline | null };
   reusableAsset: PlainReusableAsset | null;
   rawTimeSaved: number;
   netTimeSaved: number;
   timeSavingPercent: number;
-  grossCostSaving: number;
-  additionalReviewCost: number;
-  netFinancialBenefit: number;
   qualityImprovementPercent: number;
   defectReduction: number;
   completenessScore: number;
   confidenceScore: number;
   confidenceLevel: ConfidenceLevelEnum;
   confidenceBreakdown: ConfidenceResult["breakdown"];
-  hourlyCost: number;
-}
-
-function plainUser(u: SubmissionWithRelations["employee"]): PlainUser {
-  return { ...u, hourlyCost: toNumber(u.hourlyCost) };
 }
 
 export function enrich(sub: SubmissionWithRelations): EnrichedSubmission {
@@ -201,9 +171,7 @@ export function enrich(sub: SubmissionWithRelations): EnrichedSubmission {
     actualEffortWithAI: toNumber(sub.actualEffortWithAI),
     reviewCorrectionTime: toNumber(sub.reviewCorrectionTime),
     reworkTimeAvoided: toNumber(sub.reworkTimeAvoided),
-    employee: plainUser(sub.employee),
-    validatedBy: sub.validatedBy ? plainUser(sub.validatedBy) : null,
-    aiTool: { ...sub.aiTool, monthlyCostPerSeat: toNumber(sub.aiTool.monthlyCostPerSeat), userSatisfaction: toNumber(sub.aiTool.userSatisfaction) },
+    aiTool: { ...sub.aiTool, userSatisfaction: toNumber(sub.aiTool.userSatisfaction) },
     activityCategory: {
       ...sub.activityCategory,
       baseline: baseline ? { ...baseline, avgEffort: toNumber(baseline.avgEffort), minEffort: toNumber(baseline.minEffort), maxEffort: toNumber(baseline.maxEffort) } : null,
@@ -212,16 +180,12 @@ export function enrich(sub: SubmissionWithRelations): EnrichedSubmission {
     rawTimeSaved: rawTimeSaved(sub),
     netTimeSaved: netTimeSaved(sub),
     timeSavingPercent: timeSavingPercent(sub),
-    grossCostSaving: grossCostSaving(sub),
-    additionalReviewCost: additionalReviewCost(sub),
-    netFinancialBenefit: netFinancialBenefit(sub),
     qualityImprovementPercent: qualityImprovementPercent(sub),
     defectReduction: defectReduction(sub),
     completenessScore: completenessScore(sub),
     confidenceScore: confidence.score,
     confidenceLevel: confidence.level,
     confidenceBreakdown: confidence.breakdown,
-    hourlyCost: hourlyCostFor(sub),
   };
 }
 
@@ -231,8 +195,6 @@ export function enrich(sub: SubmissionWithRelations): EnrichedSubmission {
 export interface SubmissionFilters {
   dateFrom?: string;
   dateTo?: string;
-  departmentId?: string;
-  teamId?: string;
   employeeId?: string;
   projectId?: string;
   customerId?: string;
@@ -252,8 +214,6 @@ export function applyFilters(list: EnrichedSubmission[], filters: SubmissionFilt
   const iso = (d: Date) => d.toISOString().slice(0, 10);
   if (filters.dateFrom) out = out.filter((s) => iso(s.activityDate) >= filters.dateFrom!);
   if (filters.dateTo) out = out.filter((s) => iso(s.activityDate) <= filters.dateTo!);
-  if (filters.departmentId) out = out.filter((s) => s.employee.departmentId === filters.departmentId);
-  if (filters.teamId) out = out.filter((s) => s.employee.teamId === filters.teamId);
   if (filters.employeeId) out = out.filter((s) => s.employeeId === filters.employeeId);
   if (filters.projectId) out = out.filter((s) => s.projectId === filters.projectId);
   if (filters.customerId) out = out.filter((s) => s.project?.customerId === filters.customerId);
@@ -287,9 +247,6 @@ export function totals(list: EnrichedSubmission[]) {
     validatedCount: validated.length,
     totalHoursSaved: sum(list, (s) => s.netTimeSaved),
     totalHoursSavedValidated: sum(validated, (s) => s.netTimeSaved),
-    totalCostSaved: sum(list, (s) => s.grossCostSaving),
-    totalNetBenefit: sum(list, (s) => s.netFinancialBenefit),
-    totalNetBenefitValidated: sum(validated, (s) => s.netFinancialBenefit),
     avgTimeSavingPercent: avg(list, (s) => s.timeSavingPercent),
     avgQualityImprovementPercent: avg(list, (s) => s.qualityImprovementPercent),
     avgConfidenceScore: avg(list, (s) => s.confidenceScore),
@@ -317,11 +274,6 @@ export function monthlyTrend(list: EnrichedSubmission[]) {
     .map(([month, items]) => ({ month, ...totals(items) }));
 }
 
-export function byDepartment(list: EnrichedSubmission[]) {
-  const map = groupBy(list, (s) => s.employee.departmentId);
-  return [...map.entries()].map(([departmentId, items]) => ({ departmentId, ...totals(items) }));
-}
-
 export function byCategory(list: EnrichedSubmission[]) {
   const map = groupBy(list, (s) => s.activityCategoryId);
   return [...map.entries()].map(([categoryId, items]) => ({ categoryId, category: items[0].activityCategory, ...totals(items) }));
@@ -335,11 +287,6 @@ export function byTool(list: EnrichedSubmission[]) {
 export function byEmployee(list: EnrichedSubmission[]) {
   const map = groupBy(list, (s) => s.employeeId);
   return [...map.entries()].map(([employeeId, items]) => ({ employeeId, employee: items[0].employee, ...totals(items) }));
-}
-
-export function byTeam(list: EnrichedSubmission[]) {
-  const map = groupBy(list, (s) => s.employee.teamId);
-  return [...map.entries()].map(([teamId, items]) => ({ teamId, ...totals(items) }));
 }
 
 // ---------------------------------------------------------------------------

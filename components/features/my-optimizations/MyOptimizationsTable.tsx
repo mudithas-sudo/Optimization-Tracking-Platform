@@ -2,7 +2,7 @@
 
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { StatusBadge, ConfidenceBadge } from "@/components/ui/Badge";
-import { bdCurrency, numFmt } from "@/lib/format";
+import { numFmt } from "@/lib/format";
 import type { EnrichedSubmission } from "@/lib/metrics";
 
 // Columns/getRowKey/getRowHref are closures, which can't cross the
@@ -16,7 +16,7 @@ export function MyOptimizationsTable({ rows }: { rows: EnrichedSubmission[] }) {
     { key: "project.name", label: "Project", render: (r) => r.project?.name || "-" },
     { key: "aiTool.name", label: "AI Tool", render: (r) => r.aiTool.name },
     { key: "netTimeSaved", label: "Net Hrs Saved", render: (r) => `${numFmt(r.netTimeSaved)}h` },
-    { key: "netFinancialBenefit", label: "Net Benefit", render: (r) => bdCurrency(r.netFinancialBenefit, { short: true }) },
+    { key: "timeSavingPercent", label: "Time-Saving %", render: (r) => `${numFmt(r.timeSavingPercent, 0)}%` },
     { key: "confidenceLevel", label: "Confidence", render: (r) => <ConfidenceBadge level={r.confidenceLevel} size="sm" /> },
     { key: "validationStatus", label: "Status", render: (r) => <StatusBadge status={r.validationStatus} /> },
   ];

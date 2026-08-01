@@ -1,33 +1,80 @@
 import { UserGroup } from "../../generated/prisma/client";
 
-// userGroup is the platform permission tier (see Permission model) - kept
-// separate from jobTitle, which is each person's real domain title. Mapping
-// below: junior BA/Presales roles (<2yr tenure) -> Trainee/Associate BSE,
-// senior individual contributors -> BSE, team leads -> Lead BSE, delivery/VP
-// leadership -> Management, platform owner -> Admin.
+// One account per permission tier - no department/team/hourly-cost, since
+// with a single account per role there's no org hierarchy to attach and no
+// realistic per-person cost figure to maintain. clerkId links each row to a
+// real signed-in person (see prisma/scripts/link-clerk-user.ts).
 export const users = [
-  { id: "emp-101", clerkId: null, employeeId: "EMP-101", email: "nadia.hassan@hsenidmobile.com", name: "Nadia Hassan", jobTitle: "Senior Business Analyst", teamId: "team-ba-bfsi", departmentId: "dept-ba", userGroup: UserGroup.BSE, hourlyCost: 32, country: "Sri Lanka", active: true, joinedDate: new Date("2022-03-01") },
-  { id: "emp-102", clerkId: null, employeeId: "EMP-102", email: "ruwan.perera@hsenidmobile.com", name: "Ruwan Perera", jobTitle: "Business Analyst", teamId: "team-ba-bfsi", departmentId: "dept-ba", userGroup: UserGroup.ASSOCIATE_BSE, hourlyCost: 24, country: "Sri Lanka", active: true, joinedDate: new Date("2023-06-12") },
-  { id: "emp-103", clerkId: null, employeeId: "EMP-103", email: "ishara.fernando@hsenidmobile.com", name: "Ishara Fernando", jobTitle: "Business Analyst", teamId: "team-ba-bfsi", departmentId: "dept-ba", userGroup: UserGroup.TRAINEE_BSE, hourlyCost: 22, country: "Sri Lanka", active: true, joinedDate: new Date("2024-01-15") },
-  { id: "mgr-201", clerkId: null, employeeId: "MGR-201", email: "damith.wickramasinghe@hsenidmobile.com", name: "Damith Wickramasinghe", jobTitle: "BA Team Lead", teamId: "team-ba-bfsi", departmentId: "dept-ba", userGroup: UserGroup.LEAD_BSE, hourlyCost: 40, country: "Sri Lanka", active: true, joinedDate: new Date("2020-05-01") },
-
-  { id: "emp-104", clerkId: null, employeeId: "EMP-104", email: "farhana.islam@hsenidmobile.com", name: "Farhana Islam", jobTitle: "Business Analyst", teamId: "team-ba-tel", departmentId: "dept-ba", userGroup: UserGroup.ASSOCIATE_BSE, hourlyCost: 23, country: "Bangladesh", active: true, joinedDate: new Date("2023-02-20") },
-  { id: "emp-105", clerkId: null, employeeId: "EMP-105", email: "tanvir.ahmed@hsenidmobile.com", name: "Tanvir Ahmed", jobTitle: "Senior Business Analyst", teamId: "team-ba-tel", departmentId: "dept-ba", userGroup: UserGroup.BSE, hourlyCost: 30, country: "Bangladesh", active: true, joinedDate: new Date("2021-09-10") },
-  { id: "emp-106", clerkId: null, employeeId: "EMP-106", email: "miraj.rahman@hsenidmobile.com", name: "Miraj Rahman", jobTitle: "Business Analyst", teamId: "team-ba-tel", departmentId: "dept-ba", userGroup: UserGroup.TRAINEE_BSE, hourlyCost: 21, country: "Bangladesh", active: true, joinedDate: new Date("2024-04-08") },
-  { id: "mgr-202", clerkId: null, employeeId: "MGR-202", email: "sabbir.chowdhury@hsenidmobile.com", name: "Sabbir Chowdhury", jobTitle: "BA Team Lead", teamId: "team-ba-tel", departmentId: "dept-ba", userGroup: UserGroup.LEAD_BSE, hourlyCost: 38, country: "Bangladesh", active: true, joinedDate: new Date("2020-01-12") },
-
-  { id: "emp-107", clerkId: null, employeeId: "EMP-107", email: "nimesh.rajapaksha@hsenidmobile.com", name: "Nimesh Rajapaksha", jobTitle: "Presales Engineer", teamId: "team-ps-ent", departmentId: "dept-presales", userGroup: UserGroup.BSE, hourlyCost: 34, country: "Sri Lanka", active: true, joinedDate: new Date("2022-07-18") },
-  { id: "emp-108", clerkId: null, employeeId: "EMP-108", email: "achala.senanayake@hsenidmobile.com", name: "Achala Senanayake", jobTitle: "Solution Consultant", teamId: "team-ps-ent", departmentId: "dept-presales", userGroup: UserGroup.BSE, hourlyCost: 36, country: "Sri Lanka", active: true, joinedDate: new Date("2021-11-02") },
-  { id: "emp-109", clerkId: null, employeeId: "EMP-109", email: "sarah.almansoori@hsenidmobile.com", name: "Sarah Al-Mansoori", jobTitle: "Account Manager", teamId: "team-ps-ent", departmentId: "dept-presales", userGroup: UserGroup.ASSOCIATE_BSE, hourlyCost: 33, country: "UAE", active: true, joinedDate: new Date("2023-03-05") },
-  { id: "mgr-203", clerkId: null, employeeId: "MGR-203", email: "kasun.jayawardena@hsenidmobile.com", name: "Kasun Jayawardena", jobTitle: "Presales Team Lead", teamId: "team-ps-ent", departmentId: "dept-presales", userGroup: UserGroup.LEAD_BSE, hourlyCost: 42, country: "Sri Lanka", active: true, joinedDate: new Date("2019-08-01") },
-
-  { id: "emp-110", clerkId: null, employeeId: "EMP-110", email: "priyanka.gunasekara@hsenidmobile.com", name: "Priyanka Gunasekara", jobTitle: "Presales Engineer", teamId: "team-ps-sme", departmentId: "dept-presales", userGroup: UserGroup.ASSOCIATE_BSE, hourlyCost: 26, country: "Sri Lanka", active: true, joinedDate: new Date("2023-10-09") },
-  { id: "emp-111", clerkId: null, employeeId: "EMP-111", email: "omar.abdullah@hsenidmobile.com", name: "Omar Abdullah", jobTitle: "Solution Consultant", teamId: "team-ps-sme", departmentId: "dept-presales", userGroup: UserGroup.BSE, hourlyCost: 28, country: "Kenya", active: true, joinedDate: new Date("2022-12-01") },
-  { id: "emp-112", clerkId: null, employeeId: "EMP-112", email: "chamodi.rathnayake@hsenidmobile.com", name: "Chamodi Rathnayake", jobTitle: "Account Manager", teamId: "team-ps-sme", departmentId: "dept-presales", userGroup: UserGroup.TRAINEE_BSE, hourlyCost: 25, country: "Sri Lanka", active: true, joinedDate: new Date("2024-02-14") },
-  { id: "mgr-204", clerkId: null, employeeId: "MGR-204", email: "lakshan.desilva@hsenidmobile.com", name: "Lakshan de Silva", jobTitle: "Presales Team Lead", teamId: "team-ps-sme", departmentId: "dept-presales", userGroup: UserGroup.LEAD_BSE, hourlyCost: 39, country: "Sri Lanka", active: true, joinedDate: new Date("2020-06-22") },
-
-  { id: "mgmt-301", clerkId: null, employeeId: "MGMT-301", email: "chandrika.rodrigo@hsenidmobile.com", name: "Chandrika Rodrigo", jobTitle: "Head of Delivery", teamId: null, departmentId: null, userGroup: UserGroup.MANAGEMENT, hourlyCost: 55, country: "Sri Lanka", active: true, joinedDate: new Date("2017-04-01") },
-  { id: "mgmt-302", clerkId: null, employeeId: "MGMT-302", email: "faisal.karim@hsenidmobile.com", name: "Faisal Karim", jobTitle: "VP Presales & Solutions", teamId: null, departmentId: null, userGroup: UserGroup.MANAGEMENT, hourlyCost: 58, country: "Sri Lanka", active: true, joinedDate: new Date("2016-09-15") },
-
-  { id: "admin-401", clerkId: null, employeeId: "ADMIN-401", email: "yohan.mendis@hsenidmobile.com", name: "Yohan Mendis", jobTitle: "Platform Administrator", teamId: null, departmentId: null, userGroup: UserGroup.ADMIN, hourlyCost: 30, country: "Sri Lanka", active: true, joinedDate: new Date("2025-08-01") },
+  {
+    id: "trainee-bse",
+    clerkId: null,
+    employeeId: "TRAINEE-BSE",
+    email: "trainee.bse@hsenidmobile.com",
+    name: "Trainee Business Solutions Engineer",
+    jobTitle: "Trainee Business Solutions Engineer",
+    userGroup: UserGroup.TRAINEE_BSE,
+    country: "Sri Lanka",
+    active: true,
+    joinedDate: new Date("2026-01-01"),
+  },
+  {
+    id: "associate-bse",
+    clerkId: null,
+    employeeId: "ASSOCIATE-BSE",
+    email: "associate.bse@hsenidmobile.com",
+    name: "Associate Business Solutions Engineer",
+    jobTitle: "Associate Business Solutions Engineer",
+    userGroup: UserGroup.ASSOCIATE_BSE,
+    country: "Sri Lanka",
+    active: true,
+    joinedDate: new Date("2026-01-01"),
+  },
+  {
+    id: "bse",
+    clerkId: null,
+    employeeId: "BSE",
+    email: "bse@hsenidmobile.com",
+    name: "Business Solutions Engineer",
+    jobTitle: "Business Solutions Engineer",
+    userGroup: UserGroup.BSE,
+    country: "Sri Lanka",
+    active: true,
+    joinedDate: new Date("2026-01-01"),
+  },
+  {
+    id: "lead-bse",
+    clerkId: null,
+    employeeId: "LEAD-BSE",
+    email: "lead.bse@hsenidmobile.com",
+    name: "Lead Business Solutions Engineer",
+    jobTitle: "Lead Business Solutions Engineer",
+    userGroup: UserGroup.LEAD_BSE,
+    country: "Sri Lanka",
+    active: true,
+    joinedDate: new Date("2026-01-01"),
+  },
+  {
+    id: "management",
+    clerkId: null,
+    employeeId: "MANAGEMENT",
+    email: "management@hsenidmobile.com",
+    name: "Management",
+    jobTitle: "Management",
+    userGroup: UserGroup.MANAGEMENT,
+    country: "Sri Lanka",
+    active: true,
+    joinedDate: new Date("2026-01-01"),
+  },
+  {
+    id: "admin",
+    clerkId: null,
+    employeeId: "ADMIN",
+    email: "admin@hsenidmobile.com",
+    name: "Admin",
+    jobTitle: "Platform Administrator",
+    userGroup: UserGroup.ADMIN,
+    country: "Sri Lanka",
+    active: true,
+    joinedDate: new Date("2026-01-01"),
+  },
 ];

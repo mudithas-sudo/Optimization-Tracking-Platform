@@ -1,18 +1,17 @@
-// Seed script for the AI Optimization Analytics Platform database.
+// Seed script for the AI Impact & COE Tracker database.
 // Ported 1:1 from the Vite prototype's src/data/mockData.js sample data
 // (see prisma/seed-data/*.ts for the transcribed arrays).
 //
 // Run via: tsx prisma/seed.ts  (wired up as the Prisma migrate seed command
 // in prisma.config.ts). Idempotent - every entity is upserted keyed on its
 // business-key id (or, for AIModel, its (toolId, name) compound key), so
-// re-running this script is safe.
+// re-running this script is safe. Users are the one exception with a hard
+// delete step at the end - see the note there.
 
 import "dotenv/config";
 import { PrismaClient } from "../generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
-import { departments } from "./seed-data/departments";
-import { teams } from "./seed-data/teams";
 import { users } from "./seed-data/users";
 import { permissions } from "./seed-data/permissions";
 import { customers } from "./seed-data/customers";
@@ -33,16 +32,6 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  for (const d of departments) {
-    await prisma.department.upsert({ where: { id: d.id }, create: d, update: d });
-  }
-  console.log(`Seeded ${departments.length} departments`);
-
-  for (const t of teams) {
-    await prisma.team.upsert({ where: { id: t.id }, create: t, update: t });
-  }
-  console.log(`Seeded ${teams.length} teams`);
-
   for (const u of users) {
     // clerkId is set out-of-band (see prisma/scripts/link-clerk-user.ts) once a
     // real person signs in and is linked to this seeded row - never present in
@@ -127,9 +116,24 @@ async function main() {
   }
   console.log(`Seeded ${auditLogs.length} audit logs`);
 
+  // Every other table above was just re-pointed at the 6 current user ids, so
+  // any User row outside that set is now unreferenced and safe to remove -
+  // this is what actually enforces "exactly one account per role" on reseed,
+  // since upsert alone never deletes rows missing from the seed array.
+  const validUserIds = users.map((u) => u.id);
+  const removedUsers = await prisma.user.deleteMany({ where: { id: { notIn: validUserIds } } });
+  console.log(`Removed ${removedUsers.count} stale user account(s)`);
+
+  // Same reasoning as users: permissions/targets removed from the seed array
+  // (e.g. a retired nav item or a dropped $-denominated target) need an
+  // explicit delete, or upsert alone leaves the old row behind forever.
+  const removedPermissions = await prisma.permission.deleteMany({ where: { key: { notIn: permissions.map((p) => p.key) } } });
+  console.log(`Removed ${removedPermissions.count} stale permission(s)`);
+
+  const removedTargets = await prisma.target.deleteMany({ where: { id: { notIn: targets.map((t) => t.id) } } });
+  console.log(`Removed ${removedTargets.count} stale target(s)`);
+
   console.log("Seed complete:");
-  console.log(`  departments: ${departments.length}`);
-  console.log(`  teams: ${teams.length}`);
   console.log(`  users: ${users.length}`);
   console.log(`  permissions: ${permissions.length}`);
   console.log(`  customers: ${customers.length}`);

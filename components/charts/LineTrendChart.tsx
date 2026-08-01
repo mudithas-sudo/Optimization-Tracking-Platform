@@ -14,9 +14,9 @@ export function LineTrendChart({
   dataKey: string;
   color: string;
   height?: number;
-  unit?: "h" | "%" | "usd";
+  unit?: "h" | "%";
 }) {
-  const formatter = (v: number) => (unit === "%" ? `${numFmt(v, 0)}%` : unit === "usd" ? `$${numFmt(v, 0)}` : `${numFmt(v)}h`);
+  const formatter = (v: number) => (unit === "%" ? `${numFmt(v, 0)}%` : `${numFmt(v)}h`);
   return (
     <ResponsiveContainer width="100%" height={height}>
       <LineChart data={data}>

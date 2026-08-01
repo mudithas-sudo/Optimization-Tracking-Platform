@@ -21,18 +21,12 @@ export async function AIToolAnalyticsView() {
       const useCaseCounts = new Map<string, number>();
       items.forEach((s) => useCaseCounts.set(s.activityCategory.name, (useCaseCounts.get(s.activityCategory.name) || 0) + 1));
       const topUseCase = [...useCaseCounts.entries()].sort((a, b) => b[1] - a[1])[0];
-      // Cost is the admin-configured subscription spend (seats x monthly cost/seat),
-      // annualized - not summed from employee-estimated per-activity API cost, which
-      // isn't something employees can practically determine.
-      const annualCost = toNumber(tool.monthlyCostPerSeat) * tool.seats * 12;
-      const netBenefit = g?.totalNetBenefit || 0;
       return {
         tool: {
           id: tool.id,
           name: tool.name,
           vendor: tool.vendor,
           classification: tool.classification,
-          monthlyCostPerSeat: toNumber(tool.monthlyCostPerSeat),
           seats: tool.seats,
           activeUsers: tool.activeUsers,
         },
@@ -40,9 +34,6 @@ export async function AIToolAnalyticsView() {
         activities: g?.count || 0,
         totalHoursSaved: g?.totalHoursSaved || 0,
         avgHoursSaved: items.length ? avg(items, (s) => s.netTimeSaved) : 0,
-        annualCost,
-        netBenefit,
-        roi: annualCost > 0 ? (netBenefit / annualCost) * 100 : null,
         qualityScore: items.length ? avg(items, (s) => s.qualityAfter) : 0,
         errorRate,
         reworkRate,
@@ -55,17 +46,17 @@ export async function AIToolAnalyticsView() {
 
   return (
     <div className="space-y-6">
-      <SectionHeading eyebrow="AI Tool Performance" title="AI Tool Analytics" subtitle="Usage, benefit, quality, and security posture per tool." />
+      <SectionHeading eyebrow="AI Tool Performance" title="AI Tool Analytics" subtitle="Usage, impact, and quality per tool." />
 
-      <Panel title="Net benefit by tool">
+      <Panel title="Hours saved by tool">
         <BarChartHorizontal
-          data={rows.map((r) => ({ name: r.tool.name.slice(0, 16), value: r.netBenefit }))}
+          data={rows.map((r) => ({ name: r.tool.name.slice(0, 16), value: r.totalHoursSaved }))}
           dataKey="value"
           categoryKey="name"
           color="#333da3"
           height={260}
           width={120}
-          unit="usd"
+          unit="hours"
         />
       </Panel>
 

@@ -1,4 +1,4 @@
-# AI Optimization Analytics Platform (Next.js + Prisma + Clerk)
+# AI Impact & COE Tracker (Next.js + Prisma + Clerk)
 
 Next.js 16 (App Router) rewrite of the Vite prototype at `../ai-optimization-platform`, adding
 a real Postgres database (via Prisma 7) and real authentication (via Clerk). See

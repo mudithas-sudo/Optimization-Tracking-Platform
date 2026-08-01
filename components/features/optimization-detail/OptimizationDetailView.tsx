@@ -6,7 +6,7 @@ import { StatusBadge, ConfidenceBadge, OutcomeBadge } from "@/components/ui/Badg
 import { EvidencePreview } from "@/components/ui/EvidencePreview";
 import { getEnrichedSubmissionById } from "@/lib/submissions";
 import { FORMULAS, formatFlag } from "@/lib/metrics";
-import { bdCurrency, numFmt } from "@/lib/format";
+import { numFmt } from "@/lib/format";
 import { getGrantedPermissionKeysForCurrentUser } from "@/lib/permissions";
 import type { ReactNode } from "react";
 
@@ -49,20 +49,14 @@ export async function OptimizationDetailView({ id }: { id: string }) {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <Panel title="Time & Financial Impact" className="lg:col-span-2">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
+        <Panel title="Time Impact" className="lg:col-span-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <Metric label="Estimated effort without AI" value={`${numFmt(sub.estEffortWithoutAI)}h`} />
             <Metric label="Actual effort with AI" value={`${numFmt(sub.actualEffortWithAI)}h`} />
             <Metric label="Review / correction time" value={`${numFmt(sub.reviewCorrectionTime)}h`} />
             <Metric label="Net time saved" value={`${numFmt(sub.netTimeSaved)}h`} tone={sub.netTimeSaved < 0 ? "bad" : "good"} formula={FORMULAS.netTimeSaved} />
             <Metric label="Time-saving %" value={`${numFmt(sub.timeSavingPercent, 0)}%`} tone={sub.timeSavingPercent < 0 ? "bad" : "good"} formula={FORMULAS.timeSavingPercent} />
             <Metric label="Iterations" value={numFmt(sub.iterations, 0)} />
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-ink-300/15">
-            <Metric label="Gross cost saving" value={bdCurrency(sub.grossCostSaving)} formula={FORMULAS.grossCostSaving} />
-            <Metric label="Additional review cost" value={bdCurrency(sub.additionalReviewCost)} />
-            <Metric label="Net financial benefit" value={bdCurrency(sub.netFinancialBenefit)} tone={sub.netFinancialBenefit < 0 ? "bad" : "good"} formula={FORMULAS.netFinancialBenefit} />
-            <Metric label="Employee hourly cost" value={bdCurrency(sub.hourlyCost)} />
           </div>
         </Panel>
 

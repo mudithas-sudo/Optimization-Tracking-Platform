@@ -7,17 +7,16 @@ import { Panel } from "@/components/ui/Panel";
 import { FilterBar, type FilterDef } from "@/components/ui/FilterBar";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { applyFilters, type EnrichedSubmission, type SubmissionFilters } from "@/lib/metrics";
-import { bdCurrency, numFmt } from "@/lib/format";
+import { numFmt } from "@/lib/format";
 
 const REPORT_TYPES = [
   "Monthly AI Optimization Report",
   "Quarterly Management Report",
-  "Department Performance Report",
   "Employee Adoption Report",
-  "AI Tool ROI Report",
+  "AI Tool Usage Report",
   "Business Analysis Optimization Report",
   "Presales Optimization Report",
-  "High-Value Use Case Report",
+  "High-Impact Use Case Report",
   "Low-Confidence Submission Report",
   "AI Opportunity Report",
   "Reusable Prompt and Template Report",
@@ -29,8 +28,6 @@ const CONFIDENCE_LEVELS = ["HIGH", "MEDIUM", "LOW", "UNVERIFIED"];
 
 export function ReportsClient({
   submissions,
-  departments,
-  teams,
   employees,
   projects,
   customers,
@@ -39,8 +36,6 @@ export function ReportsClient({
   regions,
 }: {
   submissions: EnrichedSubmission[];
-  departments: { id: string; name: string }[];
-  teams: { id: string; name: string }[];
   employees: { id: string; name: string }[];
   projects: { id: string; name: string }[];
   customers: { id: string; name: string }[];
@@ -54,8 +49,6 @@ export function ReportsClient({
   const filters: FilterDef[] = [
     { key: "dateFrom", label: "From date", type: "date" },
     { key: "dateTo", label: "To date", type: "date" },
-    { key: "departmentId", label: "Department", options: departments.map((d) => ({ value: d.id, label: d.name })) },
-    { key: "teamId", label: "Team", options: teams.map((t) => ({ value: t.id, label: t.name })) },
     { key: "employeeId", label: "Employee", options: employees.map((u) => ({ value: u.id, label: u.name })) },
     { key: "projectId", label: "Project", options: projects.map((p) => ({ value: p.id, label: p.name })) },
     { key: "customerId", label: "Customer", options: customers.map((c) => ({ value: c.id, label: c.name })) },
@@ -77,16 +70,15 @@ export function ReportsClient({
   const filtered = useMemo(() => applyFilters(submissions, values as SubmissionFilters), [submissions, values]);
 
   function exportCsv() {
-    const headers = ["ID", "Employee", "Department", "Activity Date", "Category", "AI Tool", "Net Hours Saved", "Net Financial Benefit", "Confidence", "Validation Status"];
+    const headers = ["ID", "Employee", "Activity Date", "Category", "AI Tool", "Net Hours Saved", "Time-Saving %", "Confidence", "Validation Status"];
     const rows = filtered.map((s) => [
       s.id,
       s.employee.name,
-      s.employee.departmentId,
       s.activityDate.toISOString().slice(0, 10),
       s.activityCategory.name,
       s.aiTool.name,
       numFmt(s.netTimeSaved),
-      numFmt(s.netFinancialBenefit),
+      numFmt(s.timeSavingPercent, 0),
       s.confidenceLevel,
       s.validationStatus,
     ]);
@@ -111,7 +103,7 @@ export function ReportsClient({
     { key: "activityCategory.name", label: "Category", render: (r) => r.activityCategory.name },
     { key: "aiTool.name", label: "Tool", render: (r) => r.aiTool.name },
     { key: "netTimeSaved", label: "Hrs Saved", render: (r) => `${numFmt(r.netTimeSaved)}h` },
-    { key: "netFinancialBenefit", label: "Net Benefit", render: (r) => bdCurrency(r.netFinancialBenefit, { short: true }) },
+    { key: "timeSavingPercent", label: "Time-Saving %", render: (r) => `${numFmt(r.timeSavingPercent, 0)}%` },
     { key: "validationStatus", label: "Status" },
   ];
 

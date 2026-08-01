@@ -1,9 +1,11 @@
 // Auto-generated management insights (section 8 of the spec). Each insight is
 // computed live from the current submission data, not hardcoded, and carries
 // the fields the spec requires: supporting metric, comparison period,
-// confidence level, affected team/activity, possible cause, recommended action.
+// confidence level, affected activity, possible cause, recommended action.
+// Everything is reported in hours/quality/adoption - the platform doesn't
+// track dollar cost or benefit (see lib/metrics.ts's header comment).
 import { prisma } from "./db";
-import { byCategory, byTool, totals, monthlyTrend, sum, type EnrichedSubmission } from "./metrics";
+import { byCategory, byTool, totals, monthlyTrend, sum, avg, type EnrichedSubmission } from "./metrics";
 import { toNumber } from "./format";
 import { ConfidenceLevel } from "@/generated/prisma/enums";
 import type { ConfidenceLevel as ConfidenceLevelEnum } from "@/generated/prisma/client";
@@ -22,16 +24,16 @@ export interface Insight {
 export async function getInsights(list: EnrichedSubmission[]): Promise<Insight[]> {
   const insights: Insight[] = [];
 
-  // 1. Highest measurable benefit activity
+  // 1. Highest measurable-impact activity
   const cats = byCategory(list)
     .filter((c) => c.count >= 2)
-    .sort((a, b) => b.totalNetBenefit - a.totalNetBenefit);
+    .sort((a, b) => b.totalHoursSaved - a.totalHoursSaved);
   if (cats[0]) {
     const top = cats[0];
     insights.push({
       id: "ins-top-category",
-      title: `${top.category.name} delivers the highest measurable AI benefit`,
-      supportingMetric: `$${top.totalNetBenefit.toFixed(0)} net financial benefit across ${top.count} logged activities`,
+      title: `${top.category.name} delivers the highest measurable AI impact`,
+      supportingMetric: `${numFmt(top.totalHoursSaved)}h saved across ${top.count} logged activities`,
       comparisonPeriod: "All recorded activity",
       confidenceLevel: top.avgConfidenceScore >= 70 ? ConfidenceLevel.HIGH : top.avgConfidenceScore >= 45 ? ConfidenceLevel.MEDIUM : ConfidenceLevel.LOW,
       affected: `${top.category.group} - ${top.category.name}`,
@@ -40,28 +42,22 @@ export async function getInsights(list: EnrichedSubmission[]): Promise<Insight[]
     });
   }
 
-  // 2. Best ROI tool - cost basis is the admin-configured annual subscription
-  // spend (seats x monthly cost/seat x 12), not employee-estimated per-activity cost.
-  const toolCosts = await prisma.aITool.findMany();
-  const annualCostByToolId = new Map(toolCosts.map((t) => [t.id, toNumber(t.monthlyCostPerSeat) * t.seats * 12]));
-  const tools = byTool(list)
-    .filter((t) => t.tool && (annualCostByToolId.get(t.toolId) ?? 0) > 0)
-    .map((t) => {
-      const annualCost = annualCostByToolId.get(t.toolId)!;
-      return { ...t, annualCost, roiPct: (t.totalNetBenefit / annualCost) * 100 };
-    })
-    .sort((a, b) => b.roiPct - a.roiPct);
-  if (tools[0]) {
-    const top = tools[0];
+  // 2. Most efficient tool - avg hours saved per logged activity, not cost-based.
+  const toolRows = byTool(list)
+    .filter((t) => t.tool && t.count >= 2)
+    .map((t) => ({ ...t, avgHoursSavedPerUse: t.totalHoursSaved / t.count }))
+    .sort((a, b) => b.avgHoursSavedPerUse - a.avgHoursSavedPerUse);
+  if (toolRows[0]) {
+    const top = toolRows[0];
     insights.push({
-      id: "ins-best-roi-tool",
-      title: `${top.tool!.name} returns the best ROI of any AI tool in use`,
-      supportingMetric: `${top.roiPct.toFixed(0)}% ROI ($${top.totalNetBenefit.toFixed(0)} net benefit on $${top.annualCost.toFixed(0)} annualized subscription cost)`,
+      id: "ins-most-efficient-tool",
+      title: `${top.tool!.name} delivers the most time saved per use of any AI tool`,
+      supportingMetric: `${numFmt(top.avgHoursSavedPerUse)}h saved on average per logged activity (${top.count} activities)`,
       comparisonPeriod: "All recorded activity",
       confidenceLevel: top.avgConfidenceScore >= 70 ? ConfidenceLevel.HIGH : top.avgConfidenceScore >= 45 ? ConfidenceLevel.MEDIUM : ConfidenceLevel.LOW,
       affected: `${top.tool!.name} (${top.count} activities)`,
-      possibleCause: "Low per-seat cost relative to the effort it displaces, and strong fit for its most common use cases.",
-      recommendedAction: "Consider expanding seat allocation before renewing lower-performing tool subscriptions.",
+      possibleCause: "Strong fit for its most common use cases, and consistent prompt/template usage among adopters.",
+      recommendedAction: "Consider expanding seat allocation for this tool ahead of the next subscription renewal.",
     });
   }
 
@@ -93,11 +89,11 @@ export async function getInsights(list: EnrichedSubmission[]): Promise<Insight[]
       confidenceLevel: rating >= 4.3 ? ConfidenceLevel.HIGH : ConfidenceLevel.MEDIUM,
       affected: topAsset.category.name,
       possibleCause: "Consistent input structure and a narrow, well-scoped prompt reduce variance in output quality.",
-      recommendedAction: "Feature in onboarding for new hires in the relevant team; consider org-wide rollout if not already.",
+      recommendedAction: "Feature in onboarding for new hires in the relevant role; consider org-wide rollout if not already.",
     });
   }
 
-  // 5. Negative-benefit activities
+  // 5. Negative-impact activities
   const negative = list.filter((s) => s.netTimeSaved < 0);
   if (negative.length > 0) {
     const negTotal = sum(negative, (s) => s.netTimeSaved);
@@ -113,13 +109,13 @@ export async function getInsights(list: EnrichedSubmission[]): Promise<Insight[]
     });
   }
 
-  // 6. Validated share of claimed savings
+  // 6. Validated share of claimed hours saved
   const t = totals(list);
-  const validatedSharePct = t.totalNetBenefit !== 0 ? (t.totalNetBenefitValidated / t.totalNetBenefit) * 100 : 0;
+  const validatedSharePct = t.totalHoursSaved !== 0 ? (t.totalHoursSavedValidated / t.totalHoursSaved) * 100 : 0;
   insights.push({
     id: "ins-validated-share",
-    title: `${validatedSharePct.toFixed(0)}% of claimed net benefit has been manager-validated`,
-    supportingMetric: `$${t.totalNetBenefitValidated.toFixed(0)} validated of $${t.totalNetBenefit.toFixed(0)} total claimed`,
+    title: `${validatedSharePct.toFixed(0)}% of claimed hours saved has been manager-validated`,
+    supportingMetric: `${numFmt(t.totalHoursSavedValidated)}h validated of ${numFmt(t.totalHoursSaved)}h total claimed`,
     comparisonPeriod: "All recorded activity",
     confidenceLevel: validatedSharePct >= 70 ? ConfidenceLevel.HIGH : ConfidenceLevel.MEDIUM,
     affected: "Organization-wide",
@@ -132,17 +128,17 @@ export async function getInsights(list: EnrichedSubmission[]): Promise<Insight[]
   if (trend.length >= 2) {
     const last = trend[trend.length - 1];
     const prev = trend[trend.length - 2];
-    const direction = last.totalNetBenefit >= prev.totalNetBenefit ? "increasing" : "decreasing";
+    const direction = last.totalHoursSaved >= prev.totalHoursSaved ? "increasing" : "decreasing";
     insights.push({
       id: "ins-trend",
-      title: `Net financial benefit is ${direction} month-over-month`,
-      supportingMetric: `$${last.totalNetBenefit.toFixed(0)} (${last.month}) vs. $${prev.totalNetBenefit.toFixed(0)} (${prev.month})`,
+      title: `Hours saved is ${direction} month-over-month`,
+      supportingMetric: `${numFmt(last.totalHoursSaved)}h (${last.month}) vs. ${numFmt(prev.totalHoursSaved)}h (${prev.month})`,
       comparisonPeriod: `${prev.month} to ${last.month}`,
       confidenceLevel: ConfidenceLevel.MEDIUM,
       affected: "Organization-wide",
-      possibleCause: direction === "increasing" ? "Growing reuse of approved prompts and templates across teams." : "Slower month for high-value proposal activity, or a dip in validated submissions.",
+      possibleCause: direction === "increasing" ? "Growing reuse of approved prompts and templates across roles." : "Slower month for high-value proposal activity, or a dip in validated submissions.",
       recommendedAction:
-        direction === "increasing" ? "Document what changed this month and replicate it in other teams." : "Check whether the dip is submission volume or validation backlog before treating it as a real decline.",
+        direction === "increasing" ? "Document what changed this month and replicate it across other roles." : "Check whether the dip is submission volume or validation backlog before treating it as a real decline.",
     });
   }
 
@@ -155,19 +151,19 @@ export async function getInsights(list: EnrichedSubmission[]): Promise<Insight[]
       supportingMetric: `${generalLlmTools.map((tl) => tl.name).join(", ")} all serve similar general-writing use cases`,
       comparisonPeriod: "Current subscription state",
       confidenceLevel: ConfidenceLevel.MEDIUM,
-      affected: "Platform Administration / Finance",
-      possibleCause: "Tools were adopted organically by different teams without a central standardization decision.",
-      recommendedAction: "Review per-tool ROI and usage before the next renewal cycle; consolidate to 1-2 general-purpose tools if usage patterns allow.",
+      affected: "Platform Administration",
+      possibleCause: "Tools were adopted organically without a central standardization decision.",
+      recommendedAction: "Review per-tool usage and satisfaction before the next renewal cycle; consolidate to 1-2 general-purpose tools if usage patterns allow.",
     });
   }
 
-  // 9. Expected annual benefit projection
+  // 9. Expected annual impact projection
   if (trend.length > 0) {
-    const avgMonthly = sum(trend, (m) => m.totalNetBenefitValidated) / trend.length;
+    const avgMonthly = avg(trend, (m) => m.totalHoursSavedValidated);
     insights.push({
       id: "ins-annual-projection",
-      title: "Projected annual validated benefit based on recorded trend",
-      supportingMetric: `$${(avgMonthly * 12).toFixed(0)} projected (avg. $${avgMonthly.toFixed(0)}/month validated x 12)`,
+      title: "Projected annual validated hours saved based on recorded trend",
+      supportingMetric: `${numFmt(avgMonthly * 12)}h projected (avg. ${numFmt(avgMonthly)}h/month validated x 12)`,
       comparisonPeriod: `Based on ${trend.length} months of recorded data`,
       confidenceLevel: trend.length >= 6 ? ConfidenceLevel.MEDIUM : ConfidenceLevel.LOW,
       affected: "Organization-wide",

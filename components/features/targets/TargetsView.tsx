@@ -3,7 +3,7 @@ import { TargetKpiCard } from "@/components/ui/KpiCard";
 import { Panel } from "@/components/ui/Panel";
 import { getEnrichedSubmissions } from "@/lib/submissions";
 import { totals, monthlyTrend, adoptionStats, avgCompleteness } from "@/lib/metrics";
-import { bdCurrency, numFmt, toNumber } from "@/lib/format";
+import { numFmt, toNumber } from "@/lib/format";
 import { prisma } from "@/lib/db";
 
 const ADOPTION_ELIGIBLE_GROUPS = ["TRAINEE_BSE", "ASSOCIATE_BSE", "BSE", "LEAD_BSE"] as const;
@@ -29,7 +29,6 @@ export async function TargetsView() {
 
   const actuals: Record<string, number> = {
     monthlyValidatedHoursSaved: lastMonth?.totalHoursSavedValidated || 0,
-    monthlyNetFinancialBenefit: lastMonth?.totalNetBenefitValidated || 0,
     adoptionPercentage: adoption.adoptionPercentage,
     validatedPercentage: validatedPct,
     reusableContributionPercentage: reusableShare,
@@ -40,7 +39,7 @@ export async function TargetsView() {
     aiErrorRatePercentage: errorRate,
   };
 
-  const fmt = (unit: string) => (v: number) => (unit === "usd" ? bdCurrency(v, { short: true }) : unit === "hours" ? `${numFmt(v)}h` : `${numFmt(v, 0)}%`);
+  const fmt = (unit: string) => (v: number) => (unit === "hours" ? `${numFmt(v)}h` : `${numFmt(v, 0)}%`);
 
   return (
     <div className="space-y-6">
@@ -62,8 +61,8 @@ export async function TargetsView() {
       <Panel title="About these targets">
         <p className="text-[13px] text-ink-600 leading-relaxed">
           Targets marked with a maximum threshold (rework rate, AI-generated error rate) show green when the actual value is at or below target. All
-          other targets show green when the actual value meets or exceeds target. Only validated submissions count toward hours-saved and
-          financial-benefit targets - claimed-but-unvalidated benefit is intentionally excluded.
+          other targets show green when the actual value meets or exceeds target. Only validated submissions count toward the hours-saved
+          target - claimed-but-unvalidated impact is intentionally excluded.
         </p>
       </Panel>
     </div>

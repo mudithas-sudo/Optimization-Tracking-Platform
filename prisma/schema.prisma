@@ -97,42 +97,26 @@ enum Severity {
 }
 
 // ---------------------------------------------------------------------------
-// Org structure
+// Users
 // ---------------------------------------------------------------------------
 
-model Department {
-  id    String @id
-  name  String
-
-  teams Team[]
-  users User[]
-}
-
-model Team {
-  id           String     @id
-  name         String
-  departmentId String
-  department   Department @relation(fields: [departmentId], references: [id])
-
-  users User[]
-}
-
+// One user per UserGroup - a small, fixed set of role accounts rather than a
+// full org chart. No department/team/hourly-cost: with one account per role
+// there's no org hierarchy to attach them to, and per-employee cost figures
+// aren't practical to maintain (see OptimizationSubmission's comment on why
+// per-activity AI cost was dropped for the same reason) - all impact is
+// reported in hours/quality/adoption, never dollars.
 model User {
-  id           String   @id @default(cuid())
-  clerkId      String?  @unique // null until first sign-in links this row (see Clerk webhook)
-  employeeId   String   @unique // business key e.g. 'EMP-101', kept from the prototype
-  email        String   @unique
-  name         String
-  jobTitle     String
-  teamId       String?
-  team         Team?    @relation(fields: [teamId], references: [id])
-  departmentId String?
-  department   Department? @relation(fields: [departmentId], references: [id])
-  userGroup    UserGroup
-  hourlyCost   Decimal  @db.Decimal(10, 2)
-  country      String
-  active       Boolean  @default(true)
-  joinedDate   DateTime
+  id         String   @id @default(cuid())
+  clerkId    String?  @unique // null until first sign-in links this row (see Clerk webhook)
+  employeeId String   @unique // business key e.g. 'EMP-101', kept from the prototype
+  email      String   @unique
+  name       String
+  jobTitle   String
+  userGroup  UserGroup
+  country    String
+  active     Boolean  @default(true)
+  joinedDate DateTime
 
   submittedOptimizations  OptimizationSubmission[] @relation("SubmittedBy")
   validatedOptimizations  OptimizationSubmission[] @relation("ValidatedBy")
@@ -176,15 +160,14 @@ model Project {
 // ---------------------------------------------------------------------------
 
 model AITool {
-  id                 String  @id
-  name               String
-  vendor             String
-  monthlyCostPerSeat Decimal @db.Decimal(10, 2)
-  seats              Int
-  activeUsers        Int     // hand-maintained for now - see plan notes on deriving this later
-  classification     String  // data-security classification, e.g. 'Approved - General Use'
-  category           String  // 'General LLM' | 'Code Assistant' | 'Research' | ...
-  userSatisfaction   Decimal @db.Decimal(3, 2)
+  id               String  @id
+  name             String
+  vendor           String
+  seats            Int
+  activeUsers      Int     // hand-maintained for now - see plan notes on deriving this later
+  classification   String  // data-security classification, e.g. 'Approved - General Use'
+  category         String  // 'General LLM' | 'Code Assistant' | 'Research' | ...
+  userSatisfaction Decimal @db.Decimal(3, 2)
 
   models        AIModel[]
   submissions   OptimizationSubmission[]
@@ -274,10 +257,10 @@ model OptimizationSubmission {
 
   // Effort inputs - every derived metric (net time saved, confidence score,
   // etc.) is computed on read from these fields by lib/metrics.ts, never
-  // stored. There is deliberately no per-activity AI tool cost field: an
-  // employee cannot practically know the per-call cost of an AI tool, so
-  // AI cost/ROI is tracked at the AITool subscription level (monthlyCostPerSeat)
-  // instead - see lib/metrics.ts and the AI Tool Analytics page.
+  // stored. There is deliberately no cost field anywhere on this model or on
+  // AITool/User: neither an employee's per-call AI cost nor their hourly rate
+  // is practical to determine, so this platform reports impact purely in
+  // hours saved, quality, and adoption - never dollars.
   estEffortWithoutAI     Decimal  @db.Decimal(8, 2)
   actualEffortWithAI     Decimal  @db.Decimal(8, 2)
   reviewCorrectionTime   Decimal  @default(0) @db.Decimal(8, 2)
@@ -408,7 +391,7 @@ model Target {
   label       String
   metricKey   String  @unique
   targetValue Decimal @db.Decimal(10, 2)
-  unit        String  // 'hours' | 'usd' | 'percent'
+  unit        String  // 'hours' | 'percent' - no 'usd' targets; the platform reports impact in hours/quality/adoption, not dollars
   scope       String  // 'Organization'
   period      String  // 'Monthly' | 'Ongoing'
   direction   String? // 'max' when the target is a ceiling rather than a floor

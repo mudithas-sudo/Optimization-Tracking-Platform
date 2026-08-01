@@ -1,7 +1,7 @@
 "use client";
 
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip } from "recharts";
-import { bdCurrency, numFmt } from "@/lib/format";
+import { numFmt } from "@/lib/format";
 
 // `unit` (not a formatter function prop) so this stays passable from Server
 // Components - a plain closure prop can't cross the server/client boundary.
@@ -20,9 +20,9 @@ export function BarChartHorizontal({
   color: string;
   height?: number;
   width?: number;
-  unit?: "usd" | "hours" | "percent";
+  unit?: "hours" | "percent";
 }) {
-  const formatter = unit ? (v: number) => (unit === "usd" ? bdCurrency(v) : unit === "percent" ? `${numFmt(v, 0)}%` : `${numFmt(v)}h`) : undefined;
+  const formatter = unit ? (v: number) => (unit === "percent" ? `${numFmt(v, 0)}%` : `${numFmt(v)}h`) : undefined;
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} layout="vertical" margin={{ left: 10 }}>

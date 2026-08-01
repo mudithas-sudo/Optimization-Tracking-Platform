@@ -1,6 +1,5 @@
 export const targets = [
   { id: "tgt-hours-saved", label: "Monthly validated hours saved", metricKey: "monthlyValidatedHoursSaved", targetValue: 130, unit: "hours", scope: "Organization", period: "Monthly", direction: null },
-  { id: "tgt-net-benefit", label: "Monthly net financial benefit", metricKey: "monthlyNetFinancialBenefit", targetValue: 4500, unit: "usd", scope: "Organization", period: "Monthly", direction: null },
   { id: "tgt-adoption", label: "AI adoption percentage", metricKey: "adoptionPercentage", targetValue: 85, unit: "percent", scope: "Organization", period: "Ongoing", direction: null },
   { id: "tgt-validated-pct", label: "Validated-submission percentage", metricKey: "validatedPercentage", targetValue: 80, unit: "percent", scope: "Organization", period: "Ongoing", direction: null },
   { id: "tgt-reusable-contribution", label: "Reusable-asset contribution", metricKey: "reusableContributionPercentage", targetValue: 30, unit: "percent", scope: "Organization", period: "Ongoing", direction: null },

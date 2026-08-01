@@ -7,7 +7,7 @@ import { StatusBadge, ConfidenceBadge } from "@/components/ui/Badge";
 import { prisma } from "@/lib/db";
 import { getEnrichedSubmissions } from "@/lib/submissions";
 import { totals, FORMULAS } from "@/lib/metrics";
-import { bdCurrency, numFmt } from "@/lib/format";
+import { numFmt } from "@/lib/format";
 
 export async function COESessionDetailView({ id }: { id: string }) {
   const [session, list] = await Promise.all([
@@ -35,7 +35,7 @@ export async function COESessionDetailView({ id }: { id: string }) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <KpiCard label="Activities enabled" value={numFmt(t.count, 0)} />
         <KpiCard label="Hours saved" value={`${numFmt(t.totalHoursSaved)}h`} formula={FORMULAS.netTimeSaved} />
-        <KpiCard label="Net financial benefit" value={bdCurrency(t.totalNetBenefit, { short: true })} formula={FORMULAS.netFinancialBenefit} />
+        <KpiCard label="Avg time-saving %" value={`${numFmt(t.avgTimeSavingPercent, 0)}%`} formula={FORMULAS.timeSavingPercent} />
         <KpiCard label="Validated share" value={`${numFmt(validatedSharePct, 0)}%`} sub={`${t.validatedCount} of ${t.count}`} />
       </div>
 

@@ -4,8 +4,8 @@ import { SectionHeading } from "@/components/ui/Misc";
 import { KpiCard } from "@/components/ui/KpiCard";
 import { Panel, EmptyState } from "@/components/ui/Panel";
 import { getEnrichedSubmissions } from "@/lib/submissions";
-import { avg, sum, FORMULAS } from "@/lib/metrics";
-import { bdCurrency, numFmt } from "@/lib/format";
+import { avg, sum } from "@/lib/metrics";
+import { numFmt } from "@/lib/format";
 import { prisma } from "@/lib/db";
 
 export async function PresalesAnalyticsView() {
@@ -29,7 +29,7 @@ export async function PresalesAnalyticsView() {
 
   const topUseCases = [...list]
     .filter((s) => s.validationStatus === "VALIDATED")
-    .sort((a, b) => b.netFinancialBenefit - a.netFinancialBenefit)
+    .sort((a, b) => b.netTimeSaved - a.netTimeSaved)
     .slice(0, 6);
 
   return (
@@ -44,7 +44,6 @@ export async function PresalesAnalyticsView() {
         <KpiCard label="Presentation prep time saved" value={presentationPrep.length ? `${numFmt(sum(presentationPrep, (s) => s.netTimeSaved))}h` : "N/A"} sub={`${presentationPrep.length} activities`} />
         <KpiCard label="Effort-estimation time saved" value={effortEstimation.length ? `${numFmt(sum(effortEstimation, (s) => s.netTimeSaved))}h` : "N/A"} sub={`${effortEstimation.length} activities`} />
         <KpiCard label="Customer follow-up turnaround" value={followUp.length ? `${numFmt(avg(followUp, (s) => s.actualEffortWithAI) * 60, 0)} min` : "N/A"} sub="avg actual effort" />
-        <KpiCard label="Net financial benefit" value={bdCurrency(sum(list, (s) => s.netFinancialBenefit), { short: true })} formula={FORMULAS.netFinancialBenefit} />
       </div>
 
       <Panel title="AI-assisted opportunities and sales outcomes" subtitle="Correlation only - not a causal claim">
@@ -78,7 +77,7 @@ export async function PresalesAnalyticsView() {
         </ul>
       </Panel>
 
-      <Panel title="Most valuable presales use cases" subtitle="Validated, ranked by net financial benefit">
+      <Panel title="Most valuable presales use cases" subtitle="Validated, ranked by net hours saved">
         {topUseCases.length === 0 ? (
           <EmptyState title="No validated presales use cases yet." />
         ) : (
@@ -89,7 +88,7 @@ export async function PresalesAnalyticsView() {
                   <span className="text-ink-700 truncate mr-2">
                     {s.id} · {s.activityCategory.name} · {s.project?.name}
                   </span>
-                  <span className="font-semibold text-success-600 shrink-0">{bdCurrency(s.netFinancialBenefit, { short: true })}</span>
+                  <span className="font-semibold text-success-600 shrink-0">{numFmt(s.netTimeSaved)}h</span>
                 </Link>
               </li>
             ))}

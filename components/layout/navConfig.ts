@@ -1,6 +1,6 @@
 import {
-  LayoutDashboard, ClipboardList, PlusCircle, Users, FileText, Presentation,
-  Cpu, Grid3x3, CheckSquare, BookOpen, GraduationCap, FileBarChart, Target, ShieldCheck, Settings,
+  LayoutDashboard, ClipboardList, FileText, Presentation,
+  Cpu, Grid3x3, BookOpen, GraduationCap, FileBarChart, Target, ShieldCheck, Settings,
   type LucideIcon,
 } from "lucide-react";
 import type { UserGroup } from "@/generated/prisma/client";
@@ -35,9 +35,8 @@ interface NavItem {
 // intentionally omitted here even though the permission itself is seeded and
 // configurable, so no dead links appear until those write-flow pages exist.
 export const NAV_ITEMS: NavItem[] = [
-  { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard, keys: ["dashboard.employee", "dashboard.manager", "dashboard.executive"] },
+  { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard, keys: ["dashboard.employee", "dashboard.executive"] },
   { path: "/my-optimizations", label: "My Optimizations", icon: ClipboardList, keys: ["my-optimizations.view"] },
-  { path: "/team-analytics", label: "Team Analytics", icon: Users, keys: ["team-analytics.view"] },
   { path: "/ba-analytics", label: "Business Analysis Analytics", icon: FileText, keys: ["ba-analytics.view"] },
   { path: "/presales-analytics", label: "Presales Analytics", icon: Presentation, keys: ["presales-analytics.view"] },
   { path: "/ai-tool-analytics", label: "AI Tool Analytics", icon: Cpu, keys: ["ai-tool-analytics.view"] },

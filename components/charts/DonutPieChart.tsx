@@ -1,7 +1,6 @@
 "use client";
 
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RTooltip, Legend } from "recharts";
-import { bdCurrency } from "@/lib/format";
 
 export function DonutPieChart({ data, colors, height = 200 }: { data: { name: string; value: number }[]; colors: string[]; height?: number }) {
   return (
@@ -12,7 +11,7 @@ export function DonutPieChart({ data, colors, height = 200 }: { data: { name: st
             <Cell key={i} fill={colors[i % colors.length]} />
           ))}
         </Pie>
-        <RTooltip formatter={(v) => bdCurrency(v as number)} />
+        <RTooltip />
         <Legend wrapperStyle={{ fontSize: 11 }} />
       </PieChart>
     </ResponsiveContainer>

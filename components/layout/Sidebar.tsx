@@ -17,8 +17,8 @@ export function Sidebar({ granted, groupLabel }: { granted: PermissionKey[]; gro
           <Sparkles size={18} className="text-brand-800" />
         </div>
         <div>
-          <p className="text-[13px] font-bold leading-tight">AI Optimization</p>
-          <p className="text-[11px] text-white/55 leading-tight">Analytics Platform</p>
+          <p className="text-[13px] font-bold leading-tight">AI Impact &amp;</p>
+          <p className="text-[11px] text-white/55 leading-tight">COE Tracker</p>
         </div>
       </div>
 

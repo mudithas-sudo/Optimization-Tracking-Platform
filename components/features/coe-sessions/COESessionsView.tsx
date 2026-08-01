@@ -4,7 +4,7 @@ import { KpiCard } from "@/components/ui/KpiCard";
 import { prisma } from "@/lib/db";
 import { getEnrichedSubmissions } from "@/lib/submissions";
 import { totals, type EnrichedSubmission } from "@/lib/metrics";
-import { bdCurrency, numFmt } from "@/lib/format";
+import { numFmt } from "@/lib/format";
 
 export async function COESessionsView() {
   const [sessions, list] = await Promise.all([
@@ -33,7 +33,7 @@ export async function COESessionsView() {
         <KpiCard label="Sessions conducted" value={numFmt(sessions.length, 0)} />
         <KpiCard label="Activities enabled" value={numFmt(orgImpact.count, 0)} />
         <KpiCard label="Hours saved from these activities" value={`${numFmt(orgImpact.totalHoursSaved)}h`} />
-        <KpiCard label="Net financial benefit" value={bdCurrency(orgImpact.totalNetBenefit, { short: true })} />
+        <KpiCard label="Avg time-saving %" value={`${numFmt(orgImpact.avgTimeSavingPercent, 0)}%`} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

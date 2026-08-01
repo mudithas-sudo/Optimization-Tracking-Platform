@@ -9,14 +9,6 @@ function toNumber(v: Numberish): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-export function bdCurrency(value: Numberish, { short = false }: { short?: boolean } = {}) {
-  const num = toNumber(value);
-  const sign = num < 0 ? "-" : "";
-  const abs = Math.abs(num);
-  if (short && abs >= 1000) return `${sign}$${(abs / 1000).toFixed(1)}k`;
-  return `${sign}$${abs.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
-}
-
 export function numFmt(value: Numberish, decimals = 1) {
   const num = toNumber(value);
   return num.toLocaleString(undefined, { maximumFractionDigits: decimals });
